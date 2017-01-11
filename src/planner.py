@@ -4,12 +4,12 @@ import rospy
 import math
 from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
-
+currWay = 0
 rospy.init_node('zenith_path_planner')
 pub = rospy.Publisher('zenith/cmd_vel', Twist,queue_size = 1)
 
-Xwaypoints = [0,0]
-Ywaypoints = [13,0]
+Xwaypoints = [13,0]
+Ywaypoints = [0,0]
 
 def chop(x, xmin, xmax):
     if x < xmin:
@@ -26,6 +26,32 @@ def angle_diff(a0, a1):
     return (((a0 - a1) + 3 * math.pi) % (2 * math.pi)) - math.pi
 
 
+def getHeadingErr(actual,target): #input in radians
+    pi = math.pi
+    """
+    Actual------Target-------Error-------Difference(t-a)
+    0           2pi             0           2pi
+    0           pi/4            pi/4        pi/4
+    pi/4        0               -pi/4       -pi/4
+    6.27        0               -0.01       -6.27
+    0           6.27            0.01        6.27
+    -pi/6       9pi/6       -2pi/6(-pi/3)   10pi/6
+    """
+
+    err = target-actual
+    if (err > pi & target > 0 & actual > 0):
+        err = 2*pi - (target + actual)
+        return err
+    elif (target < 0 & actual < 0):
+        err = -1 * (target - actual)
+        return err
+    elif (target > 0 & actual < 0):
+        err = (2*pi - target) - (-1*actual)
+    elif (target < 0 & actual > 0):
+        return 0
+
+
+
 def getTwist(pose,newx,newy):
     linearTune = 10.0
     angularTune = 1.0
@@ -36,8 +62,8 @@ def getTwist(pose,newx,newy):
     print("Heading to Point: " + str(heading_to_p))
     heading_error = angle_diff(pose.theta, heading_to_p)
     print("Error: " + str(heading_error))
-    w = chop(angularTune * heading_error, -0.16, 0.16)
-    v = chop(1.0 / (linearTune * abs(heading_error)), 0.0, .5)
+    w = chop(-angularTune * heading_error, -0.2, 0.2)
+    v = chop(1.0 / (linearTune * abs(heading_error)), 0.0, .75)
 
     dpose = Twist()
     dpose.linear.x = v
@@ -47,13 +73,14 @@ def getTwist(pose,newx,newy):
 
 def callback(pose):
     #print("pose recieved")
-    i = 0
-    if (distance(pose.x,pose.y,Xwaypoints[i],Ywaypoints[i]) > .5):
+    global currWay
+
+    if (distance(pose.x,pose.y,Xwaypoints[currWay],Ywaypoints[currWay]) > .5):
         #print("twist sending")
-        pub.publish(getTwist(pose,Xwaypoints[i],Ywaypoints[i]))
+        pub.publish(getTwist(pose,Xwaypoints[currWay],Ywaypoints[currWay]))
     else:
-        if i < len(Xwaypoints):
-            i = i + 1
+        if currWay < len(Xwaypoints):
+            currWay = currWay + 1
         else:
             stopMsg = Twist()
             stopMsg.linear.x = 0
