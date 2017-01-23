@@ -50,12 +50,23 @@ def poseCallback(pose):
 
 def obscallback(list):
     for i in range(0,len(list)):
-        for j in range(0,len(course.obstacles)):
-            mindist =
-            dist = course.distance(list[i].x, list[i].y , course.obstacles[j].x, course.obstacles[j].y)
         if(list[i].type == 'static'):
-            course.obstacles.append(obstacle(obstaclec,obstaclek,math.cos(pose.theta)*list[i].x - math.sin(pose.theta)*list[i].y + pose.x,math.sin(pose.theta)*list[i].x - math.cos(pose.theta)*list[i].y + pose.y))
-        if(list[i].type == 'moving'):
+            for j in range(0,len(course.obstacles)):
+                xcoord = math.cos(pose.theta)*list[i].x - math.sin(pose.theta)*list[i].y + pose.x
+                ycoord = math.sin(pose.theta)*list[i].x - math.cos(pose.theta)*list[i].y + pose.y
+                if((xcoord > 0 and xcoord < course.height) and (ycoord < course.width/2 and ycoord > -course.width/2)):
+                    dist = course.distance(xcoord, ycoord , course.obstacles[j].x, course.obstacles[j].y)
+                    if(dist > .8 and list[i].type == 'static'):
+                        course.obstacles.append(obstacle(obstaclec,obstaclek,xcoord,ycoord)):
+                        break
+        elif(list[i].type == 'moving'):
+            stopMsg = Twist()
+            stopMsg.linear.x = 0
+            stopMsg.angular.z = 0
+            pub.publish(stopMsg)
+    #    if(list[i].type == 'static'):
+            #course.obstacles.append(obstacle(obstaclec,obstaclek,,))
+    #    if(list[i].type == 'moving'):
 
 def listener():
     rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback)
@@ -67,4 +78,3 @@ if __name__ == '__main__':
         listener()
     except rospy.ROSInterruptException:
         pass
-
