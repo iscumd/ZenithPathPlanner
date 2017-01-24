@@ -27,6 +27,7 @@ class field(object):
     def __init__(self,pos,goal):
         #print "fieldInit"
         self.robotPos = pos
+        self.goals.append(goal)
     def distance(self,x1,y1,x2,y2):
         return ((x2-x1)**2 + (y2-y1)**2)**(0.5)
     def magnitude(self,x,y,z):
@@ -41,6 +42,7 @@ class field(object):
             v = [0,0]
         return v
     def cost(self,x,y):
+        #print(self.goals[0].x)
         c = self.singleCost(x,y,1.1,-10,self.goals[0].x,self.goals[0].y)
         #c=0
         for obstacle in self.obstacles:
@@ -73,8 +75,8 @@ class field(object):
         gv = [0,0]
         vgoal = [0,0]
         bg = self.boundGradient()
-        self.height = 15
-        self.width = 6
+        #self.height = 15
+        #self.width = 4
         #print(self.robotPos.x)
         vgoal = self.gradient(-100,1.5,self.goals[0].x,self.goals[0].y,self.robotPos.x,self.robotPos.y)
         gv[0] = vgoal[0]
@@ -86,32 +88,44 @@ class field(object):
             gv[0] = gv[0] + v[0]
             gv[1] = gv[1] + v[1]
         return gv
-    def newPath(self):
+    def singleCost(self,x,y,c,k,a,b):
+        zinf = 10
+        if(self.distance(a,b,x,y)**c == 0):
+            if(k<0):
+                s = -1
+                return zinf*s
+            else:
+                return zinf
+        else:
+            return k/(self.distance(a,b,x,y)**c)
+    def newPath(self,xstart,ystart):
         isFinished = 0
         j = 0
+        self.robotPos.x = xstart
+        self.robotPos.y = ystart
         self.pathToCurrGoal.append([self.robotPos.x])
         self.pathToCurrGoal.append([self.robotPos.y])
 
-        while(not isFinished and j<10000):
+        while(not isFinished and j<100):
             distpathtogoal = self.distance(self.robotPos.x,self.robotPos.y,self.goals[0].x,self.goals[0].y)
             #distpathtogoal = self.distance(self.pathToCurrGoal[len(self.pathToCurrGoal)-1][0],self.pathToCurrGoal[len(self.pathToCurrGoal)-1][1], self.goals[0].x,self.goals[0].y)
             #print(distpathtogoal)
             if( distpathtogoal > .2):
-                print "(" + str(self.robotPos.x) + ", " + str(self.robotPos.y) + ')'
+                #print "(" + str(self.robotPos.x) + ", " + str(self.robotPos.y) + ')'
                 gv = self.findGradientVector()
                 mg = self.magnitude(gv[0],gv[1],0)
                 #self.pathToCurrGoal.append([self.robotPos.x + (gv[0]/mg)/5,self.robotPos.y + (gv[1]/mg)/5])
-                self.pathToCurrGoal[0].append(self.robotPos.x + -(gv[0]/mg)/15)
-                self.pathToCurrGoal[1].append(self.robotPos.y + -(gv[1]/mg)/15)
+                self.pathToCurrGoal[0].append(self.robotPos.x + -(gv[0]/mg)/2)
+                self.pathToCurrGoal[1].append(self.robotPos.y + -(gv[1]/mg)/2)
                 #print((gv[0]/mg))
-                self.robotPos.x = self.robotPos.x + -(gv[0]/mg)/15
-                self.robotPos.y = self.robotPos.y + -(gv[1]/mg)/15
+                self.robotPos.x = self.robotPos.x + -(gv[0]/mg)/2
+                self.robotPos.y = self.robotPos.y + -(gv[1]/mg)/2
 
                 j = j+1
             else:
                 isFinished = 1
-        print j
-        plt.plot(self.pathToCurrGoal[0],self.pathToCurrGoal[1])
-        plt.show()
+        #print j
+        #plt.plot(self.pathToCurrGoal[0],self.pathToCurrGoal[1])
+        #plt.show()
 if(__name__ == "__main__"):
     main()
