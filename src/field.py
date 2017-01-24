@@ -23,7 +23,7 @@ class field(object):
     robotPos = point(0,0)
     obstacles = []
     height = 15
-    width = 6
+    width = 4
     def __init__(self,pos,goal):
         #print "fieldInit"
         self.robotPos = pos
@@ -115,4 +115,3 @@ class field(object):
         plt.show()
 if(__name__ == "__main__"):
     main()
-
