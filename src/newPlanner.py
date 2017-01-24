@@ -39,7 +39,7 @@ def poseCallback(pose):
             elif(j == len(course.pathToCurrGoal) - 1):
                 potFlag = 0
             else:
-                j++
+                j = j +1
     else:
         stopMsg = Twist()
         stopMsg.linear.x = 0
