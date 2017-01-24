@@ -30,4 +30,3 @@ def getTwist(pose,newx,newy):
     dpose.angular.z = w
 
     return dpose
-
