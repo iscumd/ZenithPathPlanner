@@ -17,7 +17,7 @@ def angle_diff(a0, a1):
 
 def getTwist(pose,newx,newy):
     linearTune = 10.0
-    angularTune = 1.0
+    angularTune = .8
 
     d = distance(pose.x, pose.y,newx,newy)
 
@@ -25,9 +25,9 @@ def getTwist(pose,newx,newy):
     #print("Heading to Point: " + str(heading_to_p))
     heading_error = angle_diff(pose.theta, heading_to_p)
     #print("Error: " + str(heading_error))
-    w = chop(-angularTune * heading_error, -0.6, 0.6)
-    #v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, .25)
-    v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, 1)
+    w = chop(-angularTune * heading_error, -0.7, 0.7)
+    v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, .12)
+    #v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, 1)
 
     dpose = Twist()
     dpose.linear.x = v
