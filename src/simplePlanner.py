@@ -23,12 +23,12 @@ logicBox = box(11,2,7.5,0)
 robotPose = Pose2D()
 obstacles = []
 currWay = 0
-waypoint = [point(5,10),point(5,1)]
+waypoint = [point(12,0),point(0,0)]
 angularModifier = .5
 
 rospy.init_node('zenith_path_planner')
-#pub = rospy.Publisher('zenith/cmd_vel', Twist, queue_size = 1)
-pub = rospy.Publisher('turtle1/cmd_vel', Twist, queue_size = 1)
+pub = rospy.Publisher('zenith/cmd_vel', Twist, queue_size = 1)
+#pub = rospy.Publisher('turtle1/cmd_vel', Twist, queue_size = 1)
 obstacles.append(point(5,5))
 
 def poseCallback(pose):
@@ -47,11 +47,11 @@ def poseCallback(pose):
         else:
             for obs in obstacles:
                 dto = distance(pose.x,pose.y,obs.x,obs.y) # distance to obstacle
-                if(dto < 2.5):
+                if(dto < 2):
                     htp = math.atan2(waypoint[currWay].y - pose.y, waypoint[currWay].x - pose.x) # heading to point
                     hto = math.atan2(obs.y - pose.y, obs.x - pose.x) # heading to obstacle
                     hdiff = angle_diff(hto,htp)
-                    print(hdiff)
+                    #print(hdiff)
 
                     if(hdiff >= -math.pi/2 and hdiff <= math.pi/2):
                         modTwist = kenTwist(pose, hdiff, dto, hto)
@@ -64,8 +64,9 @@ def poseCallback(pose):
     else:
         currWay = currWay + 1
 
-def obscallback(obsList):
+def obscallback(obslist):
     global robotPose
+    global obstacles
     #print(obslist)
     obslist = obslist.obstacles
     #print(str(obslist))
@@ -94,11 +95,11 @@ def obscallback(obsList):
                 print("new obstacle added!")
                 print(obslist[i].type)
                 print ("(" + str(xcoord) + ', ' + str(ycoord) + ')')
-                obstacles.append(obstacle(obstaclec,obstaclek,xcoord,ycoord))
+                obstacles.append(obstacle(xcoord,ycoord))
 
 def listener():
-    #rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback,queue_size=1)
-    rospy.Subscriber("turtle1/pose", Pose, poseCallback,queue_size=1)
+    rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback,queue_size=1)
+    #rospy.Subscriber("turtle1/pose", Pose, poseCallback,queue_size=1)
     rospy.Subscriber("zenith/obstacles",ObstacleList,obscallback,queue_size=3)
     rospy.spin()
 

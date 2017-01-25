@@ -28,7 +28,7 @@ def getTwist(pose,newx,newy):
     #print("Error: " + str(heading_error))
     w = chop(-angularTune * heading_error, -0.6, 0.6)
     #v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, .25)
-    v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, 1)
+    v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, .1)
 
     dpose = Twist()
     dpose.linear.x = v
@@ -49,10 +49,10 @@ def kenTwist(pose, hdiff, dto, hto):
     #print("Error: " + str(heading_error))
     w = chop(-angle_diff(hto +math.pi/2,pose.theta) * (math.pi - hdiff), -0.6, 0.6)
     #v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, .25)
-    v = chop(1.0 / (linearTune * abs((math.pi - hdiff))), 0.0, 1)
+    v = chop(1.0 / (linearTune * abs((math.pi - hdiff))), 0.0, .25)
 
     dpose = Twist()
-    dpose.linear.x = 1
+    dpose.linear.x = .15
     dpose.angular.z = w
     #print(str(dpose))
 
@@ -80,9 +80,7 @@ def pscale(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
 
 class obstacle(object):
-    def __init__(self,c,k,x,y):
-        self.c = c
-        self.k = k
+    def __init__(self,x,y):
         self.x = x
         self.y = y
 
