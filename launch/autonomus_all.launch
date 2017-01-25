@@ -10,12 +10,11 @@
     </include>
   </group>
 
-  <include file="$(zenith_localization)/launch/Zed16h5TagSingleI.launch">
-
+  <node name="zenith_localizer" pkg="zenith_localization" type="zenith_localizer"/>
   <node name="zed_obsticale_detector" pkg="zenith_obstacle_detector" type="zed_obsticale_detector"/>
   <node name="driver" pkg="zenith_sabertooth_driver" type="driver.py"/>
-  <node name="planner" pkg="zenith_path_planner" type="planner.py"/>
-  
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+  <!--node name="newPlanner" pkg="zenith_path_planner" type="newPlanner.py"/-->
+
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
 
 </launch>

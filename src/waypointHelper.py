@@ -26,7 +26,7 @@ def getTwist(pose,newx,newy):
     heading_error = angle_diff(pose.theta, heading_to_p)
     #print("Error: " + str(heading_error))
     w = chop(-angularTune * heading_error, -0.6, 0.6)
-    v = chop(1.0 / (linearTune * abs(heading_error + .000000001)), 0.0, .25)
+    v = chop(1.0 / (linearTune * abs(heading_error) + .000000001), 0.0, .25)
 
     dpose = Twist()
     dpose.linear.x = v

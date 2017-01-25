@@ -188,4 +188,5 @@ include_directories(
 
 catkin_install_python(PROGRAMS src/planner.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
+catkin_install_python(PROGRAMS src/newPlanner.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
