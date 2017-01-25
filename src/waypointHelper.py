@@ -34,3 +34,20 @@ def getTwist(pose,newx,newy):
     #print(str(dpose))
 
     return dpose
+
+
+class point(object):
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+
+class obstacle(object):
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+class box(object):
+    def __init__(self,height,width,x,y):
+        self.height = height
+        self.width = width
+        self.x = x
+        self.y = y
