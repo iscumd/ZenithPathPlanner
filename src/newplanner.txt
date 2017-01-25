@@ -1,0 +1,6 @@
+Set waypoint and drive towards while calculating gradient. If gradient is negative:
+  when obstacle detected, compare its coordinates to list of known obstacles,
+  if new obstacle, add to obstacle list,
+if gradient is positive:
+  place an intermediate waypoint behind the offending obstacle on your path
+  use potential field algorithm to calculate the best path around the obstacle to the next waypoint

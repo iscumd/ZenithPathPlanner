@@ -7,22 +7,26 @@ from field import field
 from field import point
 from field import obstacle
 from geometry_msgs.msg import Pose2D
+from turtlesim.msg import Pose
 from geometry_msgs.msg import Twist
 from zenith_obstacle_detector.msg import ObstacleList
 
 rospy.init_node('zenith_path_planner')
-pub = rospy.Publisher('zenith/cmd_vel', Twist, queue_size = 1)
-currWay = 0
-waypoints = [point(13,0),point(0,0)]
+#pub = rospy.Publisher('zenith/cmd_vel', Twist, queue_size = 1)
+pub = rospy.Publisher('turtle1/cmd_vel', Twist, queue_size = 1)
+currWay = 1
+waypoints = [point(5,1),point(4,10),point(6,10),point(5,1)]
 course = field(point(0,0),waypoints[currWay])
-course.height = 15
-course.width = 4
+
+course.height = 11
+course.width = 11
 cost = 100
 potFlag = 0
 j=0
-obstaclec = 2
-obstaclek = 1
+obstaclec = 1
+obstaclek = 1.1
 robotPose = Pose2D()
+course.obstacles.append(obstacle(obstaclec,obstaclek,4,4))
 
 
 def poseCallback(pose):
@@ -32,25 +36,30 @@ def poseCallback(pose):
     global cost
     global potFlag
     robotPose = pose
-    if (course.distance(pose.x,pose.y,waypoints[0].x,waypoints[0].y) > .3):
+    dtw = course.distance(pose.x,pose.y,waypoints[currWay].x,waypoints[currWay].y)
+    dtpw = course.distance(pose.x,pose.y,waypoints[currWay-1].x,waypoints[currWay-1].y)
+    #print(dtpw > 1)
+    #print(dtpw)
+    if (dtw > 1):
 
         #print("twist sending")
         currcost = course.cost(pose.x,pose.y)
-        futcost = course.cost(pose.x + (math.cos(pose.theta) * .01 ),pose.y + (math.sin(pose.theta) * .01 ))
+        futcost = course.cost(pose.x + (math.cos(pose.theta) * .5 ),pose.y + (math.sin(pose.theta) * .5 ))
         #print("curr: " + str(currcost) + ', fut: ' + str(futcost) + ', diff: ' + str(futcost - currcost))
-        if(course.cost(pose.x,pose.y) >= course.cost(pose.x + (math.cos(pose.theta) * .01 ),pose.y + (math.sin(pose.theta) * .01 )) and not potFlag):
+        if(((currcost >= futcost) and not potFlag) or dtpw < 1):
 
-            print("Using waypoint")
-            pub.publish(getTwist(pose,waypoints[0].x,waypoints[0].y))
+            #print("Using waypoint")
+            pub.publish(getTwist(pose,waypoints[currWay].x,waypoints[currWay].y))
             cost = course.cost(pose.x,pose.y)
-        else:
-            print("Using potential fields!")
+        elif dtpw > 1:
+            if(not potFlag):
+                print("Using potential fields!")
             course.newPath(pose.x,pose.y)
             #print("len of new path: " + str(len(course.pathToCurrGoal)))
-            print(course.pathToCurrGoal)
+            #print(course.pathToCurrGoal)
             potFlag = 1
             if(course.distance(pose.x,pose.y,course.pathToCurrGoal[0][j],course.pathToCurrGoal[1][j]) > .2):
-                print ("Potential Field Point: (" + str(course.pathToCurrGoal[0][j]) + ', ' + str(course.pathToCurrGoal[1][j]) + ')')
+                #print ("Potential Field Point: (" + str(course.pathToCurrGoal[0][j]) + ', ' + str(course.pathToCurrGoal[1][j]) + ')')
                 pub.publish(getTwist(pose,course.pathToCurrGoal[0][j],course.pathToCurrGoal[1][j]))
             elif(j == len(course.pathToCurrGoal) - 1):
                 potFlag = 0
@@ -61,14 +70,20 @@ def poseCallback(pose):
         stopMsg.linear.x = 0
         stopMsg.angular.z = 0
         currWay = currWay + 1
+        course.goals.append(waypoints[currWay])
         course.goals.pop(0)
+        print("got there")
+        print("new Goal")
+        print(dtw)
+        print ("(" + str(course.goals[0].x) + ', ' + str(course.goals[0].y) + ')')
+        print ("(" + str(waypoints[currWay].x) + ', ' + str(waypoints[currWay].y) + ')')
+        potFlag = 0
+
         pub.publish(stopMsg)
 
 def obscallback(obslist):
     #print(obslist)
     obslist = obslist.obstacles
-
-
     #print(str(obslist))
     for i in range(0,len(obslist)):
         isFound = False
@@ -124,7 +139,8 @@ def obscallback(obslist):
     #    if(obslist[i].type == 'moving'):
 
 def listener():
-    rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback,queue_size=1)
+    #rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback,queue_size=1)
+    rospy.Subscriber("turtle1/pose", Pose, poseCallback,queue_size=1)
     rospy.Subscriber("zenith/obstacles",ObstacleList,obscallback,queue_size=3)
     rospy.spin()
 

@@ -43,7 +43,7 @@ class field(object):
         return v
     def cost(self,x,y):
         #print(self.goals[0].x)
-        c = self.singleCost(x,y,1.1,-10,self.goals[0].x,self.goals[0].y)
+        c = self.singleCost(x,y,1.1,-100,self.goals[0].x,self.goals[0].y)
         #c=0
         for obstacle in self.obstacles:
             c = c + self.singleCost(x,y,obstacle.c,obstacle.k,obstacle.x,obstacle.y)
@@ -115,11 +115,11 @@ class field(object):
                 gv = self.findGradientVector()
                 mg = self.magnitude(gv[0],gv[1],0)
                 #self.pathToCurrGoal.append([self.robotPos.x + (gv[0]/mg)/5,self.robotPos.y + (gv[1]/mg)/5])
-                self.pathToCurrGoal[0].append(self.robotPos.x + -(gv[0]/mg)/2)
-                self.pathToCurrGoal[1].append(self.robotPos.y + -(gv[1]/mg)/2)
+                self.pathToCurrGoal[0].append(self.robotPos.x + -(gv[0]/mg)*.5)
+                self.pathToCurrGoal[1].append(self.robotPos.y + -(gv[1]/mg)*.5)
                 #print((gv[0]/mg))
-                self.robotPos.x = self.robotPos.x + -(gv[0]/mg)/2
-                self.robotPos.y = self.robotPos.y + -(gv[1]/mg)/2
+                self.robotPos.x = self.robotPos.x + -(gv[0]/mg)*.5
+                self.robotPos.y = self.robotPos.y + -(gv[1]/mg)*.5
 
                 j = j+1
             else:
