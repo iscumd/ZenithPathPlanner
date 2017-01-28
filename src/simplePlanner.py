@@ -2,30 +2,54 @@
 # license removed for brevity
 import rospy
 import math
+import time
 from waypointHelper import getTwist
 from waypointHelper import distance
 from waypointHelper import point
 from waypointHelper import obstacle
 from waypointHelper import box
 from waypointHelper import distance
+from waypointHelper import angle_diff
 
 from geometry_msgs.msg import Pose2D
 from turtlesim.msg import Pose
 from geometry_msgs.msg import Twist
 from zenith_obstacle_detector.msg import ObstacleList
 
-course = box(15,4,0,0)
+course = box(13,3,0,0)
 logicBox = box(11,2,7.5,0)
 robotPose = Pose2D()
+robotPose.x = 0
+robotPose.y = 0
+robotPose.theta = 0
 obstacles = []
 currWay = 0
-waypoint = [point(12,0),point(0,0)]
+waypoint = [point(13,0)]
 angularModifier = .5
 firstPose = 0
 rospy.init_node('zenith_path_planner')
 pub = rospy.Publisher('zenith/cmd_vel', Twist, queue_size = 1)
+stall = 0
+stop = 0
+stopMode = False
+obsTime = 0
+ignoreObs = 0
+
 #pub = rospy.Publisher('turtle1/cmd_vel', Twist, queue_size = 1)
 #obstacles.append(point(5,5))
+
+def getUnstuck():
+    backwards = Twist()
+    backwards.linear.x = -0.25
+    backwards.angular.z = 0
+    pub.publish(backwards)
+
+def stop():
+    stopMode = True
+    stopMsg = Twist()
+    stopMsg.linear.x = 0
+    stopMsg.angular.y = 0
+    pub.publish(stopMsg)
 
 def poseCallback(pose):
     global robotPose
@@ -34,23 +58,49 @@ def poseCallback(pose):
     global currWay
     global waypoint
     global firstPose
+    global stall
+    global stopMode
+    backUpMode = False
     firstPose = 1
+    dflp = distance(pose.x,pose.y,robotPose.x,robotPose.y) #distance from last pose
+    tc = angle_diff(pose.theta,robotPose.theta) #theta change
+
+''' if(distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) > .3):
+
+        if(allowStallDetection):
+            if(backUpMode):
+                getUnstuck()
+                stall = stall - 1
+                if (stall < 1):
+                    stall = 0
+                    backUpMode = False
+                else:
+                    if(dflp <= .3 and tc <= .09):
+                        stall = stall + 1
+                    if(stall > 10):
+                        backUpMode = True
+'''
     robotPose = pose
     modTwist = Twist()
     dtw = distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) #distance to waypoint
     if(dtw > 0.2):
         modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y)
-        if(len(obstacles) == 0):
+        if(not stopMode):
             pub.publish(modTwist)
-            #print("No obstacles to avoid! :D")
         else:
+            stop()
+            #print("No obstacles to avoid! :D")
+        '''else:
             for obs in obstacles:
                 dto = distance(pose.x,pose.y,obs.x,obs.y) # distance to obstacle
                 if(dto < 2):
                     waypoint.insert(0,point(obs.x,obs.y + 1.5))
                 else:
-                    pub.publish(modTwist)
-                    #print("No obstacles to avoid! :D")
+                    if(not stopMode):
+                        pub.publish(modTwist)
+                    else:
+                        stop()
+                    #print("No obstacles to avoid! :D")'''
     else:
         currWay = currWay + 1
 
@@ -58,10 +108,27 @@ def obscallback(obslist):
     global robotPose
     global obstacles
     global firstPose
+    global stop
+    global obsTime
+    global ignoreObs
+    stopSec = 5
     #print(obslist)
     obslist = obslist.obstacles
     #print(str(obslist))
-    if(not firstPose):
+    if(int(round(time.time() * 1000)) - obsTime > stopSec*1000):
+        stopMode = False
+
+    for obs in obslist:
+        if obs.type == 'moving':
+            xcoord = math.cos(robotPose.theta)*obslist[i].x - math.sin(robotPose.theta)*obslist[i].y + robotPose.x
+            ycoord = -math.sin(robotPose.theta)*obslist[i].x + math.cos(robotPose.theta)*obslist[i].y + robotPose.y
+            if((xcoord > 0 and xcoord < course.height) and (ycoord < course.width/2 and ycoord > -course.width/2)):
+                if (stopMode == False and ignoreObs < 3):
+                    obsTime = int(round(time.time() * 1000))
+                    stop()
+                    ignoreObs = ignoreObs + 1
+
+    '''if(not firstPose):
         return
     for i in range(0,len(obslist)):
         isFound = False
@@ -96,7 +163,7 @@ def obscallback(obslist):
                 print(obslist[i].type)
                 print ("(" + str(xcoord) + ', ' + str(ycoord) + ')')
                 obstacles.append(obstacle(xcoord,ycoord))
-
+'''
 def listener():
     rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback,queue_size=1)
     #rospy.Subscriber("turtle1/pose", Pose, poseCallback,queue_size=1)
