@@ -24,7 +24,7 @@ robotPose.y = 0
 robotPose.theta = 0
 obstacles = []
 currWay = 0
-waypoint = [point(13,0)]
+waypoint = [point(7.8,0),point(0,0)]
 angularModifier = .5
 firstPose = 0
 rospy.init_node('zenith_path_planner')
@@ -45,6 +45,7 @@ def getUnstuck():
     pub.publish(backwards)
 
 def stop():
+    global stopMode
     stopMode = True
     stopMsg = Twist()
     stopMsg.linear.x = 0
@@ -60,31 +61,17 @@ def poseCallback(pose):
     global firstPose
     global stall
     global stopMode
+    #print(int(round(time.time() * 1000)))
     backUpMode = False
     firstPose = 1
     dflp = distance(pose.x,pose.y,robotPose.x,robotPose.y) #distance from last pose
     tc = angle_diff(pose.theta,robotPose.theta) #theta change
-
-''' if(distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) > .3):
-
-        if(allowStallDetection):
-            if(backUpMode):
-                getUnstuck()
-                stall = stall - 1
-                if (stall < 1):
-                    stall = 0
-                    backUpMode = False
-                else:
-                    if(dflp <= .3 and tc <= .09):
-                        stall = stall + 1
-                    if(stall > 10):
-                        backUpMode = True
-'''
     robotPose = pose
     modTwist = Twist()
     dtw = distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) #distance to waypoint
     if(dtw > 0.2):
         modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y)
+        print stopMode
         if(not stopMode):
             pub.publish(modTwist)
         else:
@@ -111,6 +98,7 @@ def obscallback(obslist):
     global stop
     global obsTime
     global ignoreObs
+    global stopMode
     stopSec = 5
     #print(obslist)
     obslist = obslist.obstacles
@@ -119,10 +107,13 @@ def obscallback(obslist):
         stopMode = False
 
     for obs in obslist:
+        #print "obs here"
         if obs.type == 'moving':
-            xcoord = math.cos(robotPose.theta)*obslist[i].x - math.sin(robotPose.theta)*obslist[i].y + robotPose.x
-            ycoord = -math.sin(robotPose.theta)*obslist[i].x + math.cos(robotPose.theta)*obslist[i].y + robotPose.y
-            if((xcoord > 0 and xcoord < course.height) and (ycoord < course.width/2 and ycoord > -course.width/2)):
+
+            xcoord = math.cos(robotPose.theta)*obs.x - math.sin(robotPose.theta)*obs.y + robotPose.x
+            ycoord = -math.sin(robotPose.theta)*obs.x + math.cos(robotPose.theta)*obs.y + robotPose.y
+            if((xcoord > 0 and xcoord < course.height) and (ycoord < course.width/2 - .5 and ycoord > -course.width/2 + .5)):
+                print 'moving'
                 if (stopMode == False and ignoreObs < 3):
                     obsTime = int(round(time.time() * 1000))
                     stop()

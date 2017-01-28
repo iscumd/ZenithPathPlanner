@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="turtlesim" type="turtlesim_node" name="turtlesim_node" output="screen">
+    <!-- Remap topic required by the node to custom topics -->
+    <remap from="/turtle1/pose" to="/zenith/pose2D" />
+    <remap from="/turtle1/cmd_vel" to="/zenith/cmd_vel" />
+  </node>
+</launch>

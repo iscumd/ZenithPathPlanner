@@ -1,23 +1,43 @@
-import math
-x = input("CurrX?")
-y = input("CurrY?")
-theta = input("CurrTheta?")
+#!/usr/bin/env python
+# license removed for brevity
+import rospy
+from waypointHelper import distance
+from waypointHelper import getTwist
+from waypointHelper import point
+from geometry_msgs.msg import Pose2D
+from turtlesim.msg import Pose
+from geometry_msgs.msg import Twist
+from zenith_obstacle_detector.msg import ObstacleList
 
-newx = input("NewX?")
-newy = input("NewY?")
-print(" \n ")
-print("------------------------")
-print("Going from (" + str(x) + ", " + str(y) + ") to (" + str(newx) + ", " + str(newy) + ").")
-print("\n -------------------------")
-def distance(x1,y1,x2,y2):
-    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+rospy.init_node('zenith_path_planner')
+pub = rospy.Publisher('zenith/cmd_vel', Twist, queue_size = 1)
 
-def angle_diff(a0, a1):
-    return (((a0 - a1) + 3 * math.pi) % (2 * math.pi)) - math.pi
+waypoint = [point(4,0),point(0,0)]
+currWay = 0
+backUpMode = 1
 
-d = distance(x, y,newx,newy)
+def poseCallback(pose):
+    global backUpMode
+    global currWay
+    global waypoint
+    modTwist = Twist()
+    dtw = distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) #distance to waypoint
+    if(dtw > 0.2):
+        modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y,backUpMode)
+        pub.publish(modTwist)
 
-heading_to_p = math.atan2(newy - y, newx - x)
-print("Heading to Point: " + str(heading_to_p))
-heading_error = angle_diff(theta, heading_to_p)
-print("Error: " + str(heading_error))
+    else:
+        currWay = currWay + 1
+        backUpMode = -1
+
+def listener():
+    rospy.Subscriber("zenith/pose2D", Pose2D, poseCallback,queue_size=1)
+    #rospy.Subscriber("zenith/pose2D", Pose, poseCallback,queue_size=1)
+    #rospy.Subscriber("zenith/obstacles",ObstacleList,obscallback,queue_size=1)
+    rospy.spin()
+
+if __name__ == '__main__':
+    try:
+        listener()
+    except rospy.ROSInterruptException:
+        pass
