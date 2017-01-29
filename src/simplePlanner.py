@@ -10,7 +10,7 @@ from waypointHelper import obstacle
 from waypointHelper import box
 from waypointHelper import distance
 from waypointHelper import angle_diff
-
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D
 from turtlesim.msg import Pose
 from geometry_msgs.msg import Twist
@@ -34,6 +34,9 @@ stop = 0
 stopMode = False
 obsTime = 0
 ignoreObs = 0
+angVel = 0
+linVel = 0
+velTime = int(round(time.time() * 1000))
 
 #pub = rospy.Publisher('turtle1/cmd_vel', Twist, queue_size = 1)
 #obstacles.append(point(5,5))
@@ -61,17 +64,31 @@ def poseCallback(pose):
     global firstPose
     global stall
     global stopMode
+    global velTime
+    global linVel
+    global angVel
+    #print(pose)
     #print(int(round(time.time() * 1000)))
     backUpMode = False
     firstPose = 1
     dflp = distance(pose.x,pose.y,robotPose.x,robotPose.y) #distance from last pose
     tc = angle_diff(pose.theta,robotPose.theta) #theta change
+    #velocity calculations
+    now = time.time()
+    dt = ( now - velTime)
+    angVel = (pose.theta - robotPose.theta)/dt
+    linVel = (pose.x - robotPose.x)/dt
+    print 'lin: ' + str(linVel) + '   [][][][]   ang: ' + str(angVel) + ' [][][][]   dt: ' + str(dt)
+
+    velTime = now
+
+
     robotPose = pose
     modTwist = Twist()
     dtw = distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) #distance to waypoint
     if(dtw > 0.2):
-        modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y)
-        print stopMode
+        modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y,1)
+        #print stopMode
         if(not stopMode):
             pub.publish(modTwist)
         else:
@@ -113,7 +130,7 @@ def obscallback(obslist):
             xcoord = math.cos(robotPose.theta)*obs.x - math.sin(robotPose.theta)*obs.y + robotPose.x
             ycoord = -math.sin(robotPose.theta)*obs.x + math.cos(robotPose.theta)*obs.y + robotPose.y
             if((xcoord > 0 and xcoord < course.height) and (ycoord < course.width/2 - .5 and ycoord > -course.width/2 + .5)):
-                print 'moving'
+                #print 'moving'
                 if (stopMode == False and ignoreObs < 3):
                     obsTime = int(round(time.time() * 1000))
                     stop()
