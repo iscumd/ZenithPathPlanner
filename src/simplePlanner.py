@@ -3,6 +3,7 @@
 import rospy
 import math
 import time
+from waypointHelper import chop
 from waypointHelper import getTwist
 from waypointHelper import distance
 from waypointHelper import point
@@ -38,6 +39,11 @@ angVel = 0
 linVel = 0
 velTime = int(round(time.time() * 1000))
 
+last_heading_err = 0
+aErrAcc = 0
+last_speed_err = 0
+lErrAcc = 0
+
 #pub = rospy.Publisher('turtle1/cmd_vel', Twist, queue_size = 1)
 #obstacles.append(point(5,5))
 
@@ -69,15 +75,17 @@ def poseCallback(pose):
     global angVel
     global last_heading_err
     global aErrAcc
+    global last_speed_err
+    global lErrAcc
 
     targetSpeed = 1
     linearTune = 10.0
-    lp = 10.0 #linear Proportional
-    li = 0 #linear integrator
-    ld = 0 #linear differential
+    lp = 1 #linear Proportional
+    li = 1 #linear integrator
+    ld = 1 #linear differential
     ap = 1 #Formerly Angular tune
-    ai = 0 #angular integrator
-    ad = 0 #angular differential
+    ai = 1 #angular integrator
+    ad = 1 #angular differential
     dir = 1 #1 is forward -1 is backwards
 
     #print(pose)
@@ -103,11 +111,13 @@ def poseCallback(pose):
     if(dtw < 0.2):
         currWay = currWay + 1
 
-    if(len(waypoint)-1 < currWay):
+    print(currWay)
+
+    if(currWay < len(waypoint)-1):
 
         d = distance(pose.x, pose.y,waypoint[currWay].x,waypoint[currWay].y)
 
-        heading_to_p = math.atan2(waypoint[currWay].y - pose.y, pose.y,waypoint[currWay].x - pose.x)
+        heading_to_p = math.atan2(waypoint[currWay].y - pose.y, waypoint[currWay].x - pose.x)
         #print("Heading to Point: " + str(heading_to_p))
         if(dir == -1):
             heading_error = angle_diff( heading_to_p,angle_diff(pose.theta, math.pi))
