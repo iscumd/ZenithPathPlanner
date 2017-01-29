@@ -67,6 +67,19 @@ def poseCallback(pose):
     global velTime
     global linVel
     global angVel
+    global last_heading_err
+    global aErrAcc
+
+    targetSpeed = 1
+    linearTune = 10.0
+    lp = 10.0 #linear Proportional
+    li = 0 #linear integrator
+    ld = 0 #linear differential
+    ap = 1 #Formerly Angular tune
+    ai = 0 #angular integrator
+    ad = 0 #angular differential
+    dir = 1 #1 is forward -1 is backwards
+
     #print(pose)
     #print(int(round(time.time() * 1000)))
     backUpMode = False
@@ -76,37 +89,68 @@ def poseCallback(pose):
     #velocity calculations
     now = time.time()
     dt = ( now - velTime)
+    velTime = now
+
     angVel = (pose.theta - robotPose.theta)/dt
     linVel = (pose.x - robotPose.x)/dt
     print 'lin: ' + str(linVel) + '   [][][][]   ang: ' + str(angVel) + ' [][][][]   dt: ' + str(dt)
-
-    velTime = now
 
 
     robotPose = pose
     modTwist = Twist()
     dtw = distance(pose.x,pose.y,waypoint[currWay].x,waypoint[currWay].y) #distance to waypoint
-    if(dtw > 0.2):
-        modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y,1)
-        #print stopMode
-        if(not stopMode):
-            pub.publish(modTwist)
-        else:
-            stop()
-            #print("No obstacles to avoid! :D")
-        '''else:
-            for obs in obstacles:
-                dto = distance(pose.x,pose.y,obs.x,obs.y) # distance to obstacle
-                if(dto < 2):
-                    waypoint.insert(0,point(obs.x,obs.y + 1.5))
-                else:
-                    if(not stopMode):
-                        pub.publish(modTwist)
-                    else:
-                        stop()
-                    #print("No obstacles to avoid! :D")'''
-    else:
+
+    if(dtw < 0.2):
         currWay = currWay + 1
+
+    if(len(waypoint)-1 < currWay):
+
+        d = distance(pose.x, pose.y,waypoint[currWay].x,waypoint[currWay].y)
+
+        heading_to_p = math.atan2(waypoint[currWay].y - pose.y, pose.y,waypoint[currWay].x - pose.x)
+        #print("Heading to Point: " + str(heading_to_p))
+        if(dir == -1):
+            heading_error = angle_diff( heading_to_p,angle_diff(pose.theta, math.pi))
+            print("Reverse Mode")
+        else:
+            heading_error = angle_diff(heading_to_p, pose.theta)
+
+        #aErrAcc is angular Error Accumulator
+        aErrAcc = heading_error*dt + aErrAcc
+        last_heading_err = heading_error
+        aErrDif = (heading_error - last_heading_err)/dt
+        prechopW = ap * heading_error + ai * aErrAcc + ad * aErrDif
+        w = chop(prechopW, -1,1)
+
+        #aErrAcc is angular Error Accumulator
+
+        adjusted_Target_Speed = chop(targetSpeed / (linearTune * abs(heading_error) + .000000001), 0.0, targetSpeed)
+        speed_error = linVel - adjusted_Target_Speed
+        lErrAcc = speed_error*dt + lErrAcc
+        last_speed_err = speed_error
+        lErrDif = (speed_error - last_speed_err)/dt
+        prechopV = lp * speed_error + li * lErrAcc + ld * lErrDif
+        v = chop(prechopV, 0.0, .5)
+
+        if(dir == -1):
+            v = v*-1
+
+        modTwist.linear.x = v
+        modTwist.angular.z = w
+
+        #modTwist = getTwist(pose,waypoint[currWay].x,waypoint[currWay].y,1)
+
+    else:
+
+       modTwist.linear.x = 0
+       modTwist.angular.y = 0
+       print("End of Path")
+
+    #print stopMode
+    if(not stopMode):
+        pub.publish(modTwist)
+    else:
+        stop()
 
 def obscallback(obslist):
     global robotPose
